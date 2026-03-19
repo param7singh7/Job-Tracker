@@ -252,18 +252,17 @@ Cron expression configured by `SCAN_CRON`.
 
 This repo now includes a Render blueprint at `render.yaml` that creates:
 - managed PostgreSQL database
-- always-on web app
-- always-on worker running the scan scheduler (`SCAN_CRON=0 */6 * * *`)
+- web app (free plan compatible)
 
 ### Deploy Steps (Render)
 
 1. Push this repo to GitHub.
 2. In Render, choose **New +** -> **Blueprint**.
 3. Select your repo and deploy `render.yaml`.
-4. After first deploy, set secrets in Render for both `ireland-job-radar-web` and `ireland-job-radar-scanner`:
+4. After first deploy, set secrets in Render for `ireland-job-radar-web`:
    - `LINKEDIN_COOKIE` (your `li_at` value)
    - optional notification vars (`WEBHOOK_URLS`, `SMTP_*`, `DIGEST_EMAIL_TO`)
-5. Redeploy both services once secrets are set.
+5. Redeploy web service once secrets are set.
 6. Open your live URL and test:
    - `/api/health`
    - `/api/refresh`
@@ -275,8 +274,21 @@ bash scripts/publish-to-github.sh <your-github-repo-url>
 ```
 
 Notes:
-- Keep both services on a non-sleep plan (`starter` or higher) to run continuously.
+- Free web services on Render sleep on idle and can cold-start on the next request.
+- Free Render Postgres instances expire after 30 days unless upgraded.
 - `NEXT_PUBLIC_APP_URL` is preset to the Render service hostname in `render.yaml`; update it if you rename the service.
+
+### Free Continuous Scans (GitHub Actions)
+
+For free-plan refresh every 6 hours, this repo includes:
+- `.github/workflows/scan-refresh.yml`
+
+Set GitHub repo secret:
+- `RENDER_APP_URL` = your live Render URL (for example `https://ireland-job-radar-web.onrender.com`)
+
+The workflow triggers:
+- `POST /api/refresh` every 6 hours
+- manual run via **Actions** -> **Scan Refresh** -> **Run workflow**
 
 ## Provider Modes
 

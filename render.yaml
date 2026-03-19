@@ -2,100 +2,17 @@ databases:
   - name: ireland-job-radar-db
     databaseName: job_radar
     user: job_radar
-    plan: starter
+    plan: free
 
 services:
   - type: web
     name: ireland-job-radar-web
     runtime: node
-    plan: starter
+    plan: free
     autoDeploy: true
     buildCommand: npm ci && npm run prisma:generate && npm run build
     startCommand: npm run start:web
     healthCheckPath: /api/health
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ireland-job-radar-db
-          property: connectionString
-      - key: NEXT_PUBLIC_APP_URL
-        value: https://ireland-job-radar-web.onrender.com
-      - key: ENABLE_MOCK_MODE
-        value: "false"
-      - key: SCAN_CRON
-        value: "0 */6 * * *"
-      - key: SCAN_MAX_PAGES
-        value: "10"
-      - key: SCAN_TIMEOUT_MS
-        value: "12000"
-      - key: PROVIDER_FETCH_TIMEOUT_MS
-        value: "900000"
-      - key: PROVIDER_BACKFILL_MIN_JOBS
-        value: "0"
-      - key: MIN_POSTED_AT
-        value: "2026-03-01"
-      - key: LINKEDIN_SCAN_STRATEGY
-        value: exhaustive
-      - key: LINKEDIN_MAX_KEYWORDS
-        value: "0"
-      - key: LINKEDIN_MAX_PAGES_PER_KEYWORD
-        value: "18"
-      - key: LINKEDIN_STOP_AFTER_EMPTY_PAGES
-        value: "2"
-      - key: LINKEDIN_MAX_TOTAL_REQUESTS
-        value: "1400"
-      - key: LINKEDIN_REQUEST_DELAY_MS
-        value: "550"
-      - key: LINKEDIN_KEYWORD_DELAY_MS
-        value: "900"
-      - key: LINKEDIN_USE_BING_SUPPLEMENT
-        value: "true"
-      - key: DAILY_TARGET_FETCHED
-        value: "600"
-      - key: DAILY_TARGET_PARSED
-        value: "300"
-      - key: DAILY_TARGET_LINKEDIN_VISIBLE
-        value: "220"
-      - key: CSV_EXPORT_ENABLED
-        value: "true"
-      - key: CSV_EXPORT_DIR
-        value: exports
-      - key: PROVIDER_LINKEDIN_MODE
-        value: live
-      - key: PROVIDER_GLASSDOOR_MODE
-        value: live
-      - key: PROVIDER_INDEED_MODE
-        value: live
-      - key: PROVIDER_JOBSIRELAND_MODE
-        value: off
-      - key: PROVIDER_IRISHJOBS_MODE
-        value: off
-      - key: LINKEDIN_COOKIE
-        sync: false
-      - key: WEBHOOK_URLS
-        sync: false
-      - key: DIGEST_EMAIL_TO
-        sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-
-  - type: worker
-    name: ireland-job-radar-scanner
-    runtime: node
-    plan: starter
-    autoDeploy: true
-    buildCommand: npm ci && npm run prisma:generate
-    startCommand: npm run start:worker
     envVars:
       - key: NODE_VERSION
         value: 20
