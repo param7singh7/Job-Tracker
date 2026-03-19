@@ -1,0 +1,49 @@
+{
+  "name": "ireland-data-analytics-job-radar",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "start:web": "npx prisma migrate deploy && npm run start",
+    "start:worker": "npm run scheduler",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "scan": "tsx src/scripts/run-scan.ts",
+    "scheduler": "tsx src/scripts/scheduler.ts",
+    "dev:recover": "bash scripts/dev-recover.sh"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.21.1",
+    "cheerio": "^1.0.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "fast-xml-parser": "^4.5.0",
+    "lucide-react": "^0.460.0",
+    "next": "^14.2.25",
+    "node-cron": "^3.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.25",
+    "postcss": "^8.4.49",
+    "prisma": "^5.21.1",
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

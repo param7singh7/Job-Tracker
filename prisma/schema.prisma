@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceName {
+  LINKEDIN
+  JOBSIRELAND
+  GLASSDOOR
+  IRISHJOBS
+  INDEED
+  MOCK
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+  UNKNOWN
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  INTERNSHIP
+  GRADUATE
+  UNKNOWN
+}
+
+enum SeniorityLevel {
+  ENTRY
+  JUNIOR
+  ASSOCIATE
+  MID
+  SENIOR
+  LEAD
+  MANAGER
+  DIRECTOR
+  UNKNOWN
+}
+
+enum MatchLevel {
+  APPLY_NOW
+  STRONG_MATCH
+  GOOD_MATCH
+  STRETCH
+  LOW_MATCH
+  EXCLUDE
+}
+
+enum Classification {
+  RELEVANT
+  ADJACENT
+  EXCLUDED
+}
+
+enum JobStatus {
+  NEW
+  REVIEWING
+  SAVED
+  APPLIED
+  INTERVIEW
+  REJECTED
+  CLOSED
+  DISMISSED
+  SNOOZED
+}
+
+enum ScanStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL_FAILURE
+  FAILED
+}
+
+enum ProviderHealth {
+  HEALTHY
+  DEGRADED
+  DOWN
+  DISABLED
+}
+
+model Source {
+  id                 String                @id @default(cuid())
+  name               SourceName            @unique
+  enabled            Boolean               @default(true)
+  health             ProviderHealth        @default(HEALTHY)
+  mockMode           Boolean               @default(false)
+  baseUrl            String?
+  lastSuccessfulScan DateTime?
+  lastScanAttemptAt  DateTime?
+  lastError          String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  jobSources   JobSource[]
+  scanResults  ScanRunSourceResult[]
+
+  @@index([health])
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String
+  normalizedName String   @unique
+  website        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  jobs Job[]
+
+  @@index([name])
+}
+
+model Job {
+  id                         String          @id @default(cuid())
+  canonicalKey               String          @unique
+  title                      String
+  titleNormalized            String
+  companyId                  String?
+  companyNameCached          String
+  locationText               String?
+  city                       String?
+  county                     String?
+  country                    String?
+  workMode                   WorkMode        @default(UNKNOWN)
+  employmentType             EmploymentType  @default(UNKNOWN)
+  seniorityLevel             SeniorityLevel  @default(UNKNOWN)
+  salaryMin                  Int?
+  salaryMax                  Int?
+  salaryCurrency             String?
+  descriptionRaw             String?
+  descriptionClean           String?
+  postedAt                   DateTime?
+  discoveredAt               DateTime        @default(now())
+  expiresAt                  DateTime?
+  sourcePrimary              SourceName
+  applyUrl                   String?
+  relevanceScore             Float           @default(0)
+  urgencyScore               Float           @default(0)
+  titleMatchScore            Float           @default(0)
+  skillsMatchScore           Float           @default(0)
+  seniorityFitScore          Float           @default(0)
+  eligibilityScore           Float           @default(0)
+  recencyScore               Float           @default(0)
+  finalScore                 Float           @default(0)
+  matchLevel                 MatchLevel      @default(LOW_MATCH)
+  classification             Classification  @default(RELEVANT)
+  sponsorshipMentioned       Boolean         @default(false)
+  workAuthorizationMentioned Boolean         @default(false)
+  extractedSkillsJson        Json?
+  matchedKeywordsJson        Json?
+  excludedKeywordsJson       Json?
+  scoringReasonsJson         Json?
+  classificationReason       String?
+  scanConfidence             Float           @default(0)
+  duplicateGroupId           String?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  company    Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  jobSources JobSource[]
+  skills     JobSkillTag[]
+  userStates UserJobState[]
+
+  @@index([postedAt])
+  @@index([discoveredAt])
+  @@index([finalScore])
+  @@index([matchLevel])
+  @@index([country, county, city])
+  @@index([duplicateGroupId])
+  @@index([titleNormalized])
+}
+
+model JobSource {
+  id               String     @id @default(cuid())
+  jobId            String
+  sourceId         String
+  sourceName       SourceName
+  sourceJobId      String
+  sourceUrl        String?
+  applyUrl         String?
+  sourcePostedText String?
+  sourcePostedAt   DateTime?
+  discoveredAt     DateTime   @default(now())
+  rawPayloadJson   Json?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  job    Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, sourceJobId])
+  @@index([jobId])
+  @@index([sourceName])
+}
+
+model JobSkillTag {
+  id        String   @id @default(cuid())
+  jobId     String
+  skill     String
+  weight    Float    @default(1)
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([skill])
+}
+
+model UserJobState {
+  id         String    @id @default(cuid())
+  jobId      String
+  status     JobStatus @default(NEW)
+  isSaved    Boolean   @default(false)
+  isDismissed Boolean  @default(false)
+  isApplied  Boolean   @default(false)
+  notes      String?
+  followUpAt DateTime?
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime  @default(now())
+  reviewedAt DateTime?
+  snoozedUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId])
+  @@index([status])
+  @@index([isSaved])
+  @@index([isApplied])
+}
+
+model ScanRun {
+  id                 String      @id @default(cuid())
+  startedAt          DateTime    @default(now())
+  completedAt        DateTime?
+  status             ScanStatus  @default(RUNNING)
+  totalFetched       Int         @default(0)
+  totalCreated       Int         @default(0)
+  totalUpdated       Int         @default(0)
+  totalDuplicates    Int         @default(0)
+  totalFailedSources Int         @default(0)
+  errorSummary       String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  sourceResults ScanRunSourceResult[]
+
+  @@index([startedAt])
+  @@index([status])
+}
+
+model ScanRunSourceResult {
+  id              String        @id @default(cuid())
+  scanRunId       String
+  sourceId        String
+  status          ScanStatus
+  durationMs      Int?
+  fetchedCount    Int           @default(0)
+  parsedCount     Int           @default(0)
+  skippedCount    Int           @default(0)
+  duplicateCount  Int           @default(0)
+  errorCount      Int           @default(0)
+  errorMessage    String?
+  detailsJson     Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  scanRun ScanRun @relation(fields: [scanRunId], references: [id], onDelete: Cascade)
+  source  Source  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([scanRunId])
+  @@index([sourceId])
+  @@index([status])
+}
+
+model SearchConfig {
+  id                         String   @id @default(cuid())
+  name                       String   @default("default")
+  includedSources            Json
+  keywordGroups              Json
+  excludedKeywordGroups      Json
+  locationFilters            Json
+  minimumScore               Float    @default(35)
+  applyNowThreshold          Float    @default(80)
+  includeStretchRoles        Boolean  @default(true)
+  includeContractJobs        Boolean  @default(true)
+  includeGraduateRoles       Boolean  @default(true)
+  includeRemoteIreland       Boolean  @default(true)
+  includeSuspiciousMatches   Boolean  @default(false)
+  refreshFrequencyMinutes    Int      @default(180)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@unique([name])
+}
+
+model KeywordGroup {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  groupType   String
+  keywords    Json
+  weight      Float    @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([groupType])
+  @@index([isActive])
+}
